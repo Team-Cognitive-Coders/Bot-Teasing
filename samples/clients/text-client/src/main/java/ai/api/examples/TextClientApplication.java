@@ -81,6 +81,46 @@ public class TextClientApplication {
 			System.out.println(ip.getIntentName() + " " + ip.getParameterName());
 		}
 		
+		IntentResponse intentresponse1 = new IntentResponse("get.day","today", false);
+		ArrayList<IntentResponse> intentresponses = new ArrayList<>();
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("get.time","9pm", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("get.number.of.guests", "5", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("get.restaurant", "CCDD", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("get.name","My name is Dexter", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("go.to.reserve.table","book table", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("go.to.confirm","okay", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("go.to.reserve.table","I want to book a table for 5 at CCDD on friday 8pm", false);
+		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("go.to.confirm","okay", false);
+		intentresponses.add(intentresponse1);
+		
+		for(IntentResponse ir: intentresponses) {
+			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
+		}
+		
+		ParameterResponse paramresponse1 = new ParameterResponse("day","I want to book a table for 5 at CCDD on friday 8pm");
+		ArrayList<ParameterResponse> paramresponses = new ArrayList<>();
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("time","I want to book a table for 5 at CCDD on friday 8pm");
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("guestNumber", "I want to book a table for 5 at CCDD on friday 8pm");
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("restaurantName", "I want to book a table for 5 at CCDD on friday 8pm");
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("username", "I want to book a table for 5 at CCDD on friday 8pm");
+		paramresponses.add(paramresponse1);
+		
+		for(ParameterResponse pr: paramresponses) {
+			System.out.println(pr.getParameterName() + " " + pr.getResponse());
+		}
+		
 		
 		//Test Bot Configuration
 		AIDataService dataServiceTest = TestBotConfiguration.getInstance().getDataServiceTest();
