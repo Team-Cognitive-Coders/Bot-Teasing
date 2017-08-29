@@ -16,6 +16,8 @@
 
 package ai.api.examples;
 
+import java.util.ArrayList;
+
 import ai.api.AIConfiguration;
 import ai.api.AIDataService;
 import ai.api.AIServiceException;
@@ -34,15 +36,7 @@ public class TextClientApplication {
 	 */
 	private static final int ERROR_EXIT_CODE = 1;
 
-	/**
-	 * @param args
-	 *            List of parameters:<br>
-	 *            First parameters should be valid api key<br>
-	 *            Second and the following args should be file names containing
-	 *            audio data.
-	 */
 	public static void main(String[] args) {
-
 
 		/*
 		 * BookTable AIConfiguration configurationDevBot = new
@@ -52,80 +46,107 @@ public class TextClientApplication {
 		AIConfiguration configurationDevBot = new AIConfiguration("6e3a284cb2004268adcc63dcddbb8fde");
 
 		AIDataService dataServiceDev = new AIDataService(configurationDevBot);
+		
+		//Add data to the DB
+		Parameter param1 = new Parameter("day", true);
+		ArrayList<Parameter> params = new ArrayList<>();
+		params.add(param1);
+		param1 = new Parameter("time", true);
+		params.add(param1);
+		param1 = new Parameter("guestNumber", true);
+		params.add(param1);
+		param1 = new Parameter("restaurantName", false);
+		params.add(param1);
+		param1 = new Parameter("username", false);
+		params.add(param1);
+		
+		for(Parameter p: params) {
+			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
+		}
+		
+		
+		IntentParameter intentparam1 = new IntentParameter("get.day","day");
+		ArrayList<IntentParameter> intentparams = new ArrayList<>();
+		intentparams.add(intentparam1);
+		intentparam1 = new IntentParameter("get.time","time");
+		intentparams.add(intentparam1);
+		intentparam1 = new IntentParameter("get.number.of.guests", "guestNumber");
+		intentparams.add(intentparam1);
+		intentparam1 = new IntentParameter("get.restaurant", "restaurantName");
+		intentparams.add(intentparam1);
+		intentparam1 = new IntentParameter("get.name","username");
+		intentparams.add(intentparam1);
+		
+		for(IntentParameter ip: intentparams) {
+			System.out.println(ip.getIntentName() + " " + ip.getParameterName());
+		}
+		
+		
+		//Test Bot Configuration
+		AIDataService dataServiceTest = TestBotConfiguration.getInstance().getDataServiceTest();
 
-		AIConfiguration configurationTestBot = new AIConfiguration("a178add25d2c40219d97a32722c191b4");
-
-		AIDataService dataServiceTest = new AIDataService(configurationTestBot);
+		// Test Bot Initializes Conversation
 		AIEvent startConversation = new AIEvent("TESTBOT");
 		String line = null;
-		String intentName = new String();
 		System.out.print(INPUT_PROMPT);
-		// System.out.println(line);
 
 		AIRequest requestTest = new AIRequest();
 		requestTest.setEvent(startConversation);
 		AIResponse responseTest;
 		try {
 			responseTest = dataServiceTest.request(requestTest);
-			// responseTest.getResult().getFulfillment().getFollowupEvent();
-			if (responseTest.getStatus().getCode() == 200) {
-				line = responseTest.getResult().getFulfillment().getSpeech();
-				intentName = responseTest.getResult().getMetadata().getIntentName();
-				System.out.println(line);
-				System.out.println(intentName);
-			} else {
-				System.err.println(responseTest.getStatus().getErrorDetails());
-			}
-
+			line = getResponse(responseTest);
+			testBot(dataServiceDev, dataServiceTest, requestTest, responseTest, line);
 		} catch (AIServiceException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		line = testBot(dataServiceDev, dataServiceTest, line);
 
 		System.out.println("See ya!");
 	}
 
-	public static String testBot(AIDataService dataServiceDev, AIDataService dataServiceTest, String line) {
+	public static String getResponse(AIResponse response) {
+		String line = "";
+		if (response.getStatus().getCode() == 200) {
+			line = response.getResult().getFulfillment().getSpeech();
+			System.out.println(line);
+		} else {
+			System.err.println(response.getStatus().getErrorDetails());
+		}
+
+		return line;
+	}
+
+	public static void testBot(AIDataService dataServiceDev, AIDataService dataServiceTest, AIRequest requestTest,
+			AIResponse responseTest, String line) {
 		String intentName;
-		AIRequest requestTest;
-		AIResponse responseTest;
+
 		while (null != line) {
 
 			try {
 				AIRequest requestDev = new AIRequest(line);
 				AIResponse responseDev = dataServiceDev.request(requestDev);
 
-				if (responseDev.getStatus().getCode() == 200) {
-					line = responseDev.getResult().getFulfillment().getSpeech();
-					System.out.println(line);
-				} else {
-					System.err.println(responseDev.getStatus().getErrorDetails());
-				}
-
+				line = getResponse(responseDev);
 				System.out.print(INPUT_PROMPT);
 
 				requestTest = new AIRequest(line);
 
 				responseTest = dataServiceTest.request(requestTest);
-
-				if (responseTest.getStatus().getCode() == 200) {
-					line = responseTest.getResult().getFulfillment().getSpeech();
-					intentName = responseTest.getResult().getMetadata().getIntentName();
-					System.out.println(line);
-					if (intentName.equalsIgnoreCase("Default Fallback Intent"))
-						break;
-				} else {
-					System.err.println(responseTest.getStatus().getErrorDetails());
-				}
+				line = getResponse(responseTest);
+				
+				
+				intentName = responseTest.getResult().getMetadata().getIntentName();
+				if (intentName.equalsIgnoreCase("Default Fallback Intent"))
+					break;
+				
+				//checkRequiredParameters();
 
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
 
 		}
-		return line;
+
 	}
 
 	/**
