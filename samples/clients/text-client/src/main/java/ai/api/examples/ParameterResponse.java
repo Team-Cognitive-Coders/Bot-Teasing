@@ -5,6 +5,11 @@ public class ParameterResponse {
 	private String parameterName;
 	private String response;
 	
+	public ParameterResponse(String parameterName, String response) {
+		this.parameterName = parameterName;
+		this.response = response;
+	}
+	
 	public String getParameterName() {
 		return parameterName;
 	}

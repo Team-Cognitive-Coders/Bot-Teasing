@@ -6,6 +6,12 @@ public class IntentResponse {
 	private String response;
 	private boolean sent;
 	
+	IntentResponse(String intentName, String response, boolean sent){
+		this.intentName = intentName;
+		this.response = response;
+		this.sent = sent;
+	}
+	
 	public String getIntentName() {
 		return intentName;
 	}
@@ -18,7 +24,7 @@ public class IntentResponse {
 	public void setResponse(String response) {
 		this.response = response;
 	}
-	public boolean isSent() {
+	public boolean getSent() {
 		return sent;
 	}
 	public void setSent(boolean sent) {
