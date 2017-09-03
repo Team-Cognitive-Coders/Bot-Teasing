@@ -35,17 +35,17 @@ public class TextClientApplication {
 	/**
 	 * Default exit code in case of error
 	 */
-	private static final int ERROR_EXIT_CODE = 1;
+	//private static final int ERROR_EXIT_CODE = 1;
 	private static String status = "Review";
 
 	public static void main(String[] args) {
 
-		/*
-		 * BookTable AIConfiguration configurationDevBot = new
-		 * AIConfiguration("aa7003e594be4d7f89bd9afbe09b607e");
-		 */
+		//BookTable 
+		AIConfiguration configurationDevBot = new
+		 AIConfiguration("aa7003e594be4d7f89bd9afbe09b607e");
+		 
 		// RestaurantChatbot
-		AIConfiguration configurationDevBot = new AIConfiguration("6e3a284cb2004268adcc63dcddbb8fde");
+		//AIConfiguration configurationDevBot = new AIConfiguration("6e3a284cb2004268adcc63dcddbb8fde");
 
 		AIDataService dataServiceDev = new AIDataService(configurationDevBot);
 
@@ -66,7 +66,7 @@ public class TextClientApplication {
 			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
 		}
 
-/*		IntentParameter intentparam1 = new IntentParameter("get.day", "day");
+		/*IntentParameter intentparam1 = new IntentParameter("get.day", "day");
 		ArrayList<IntentParameter> intentparams = new ArrayList<>();
 		intentparams.add(intentparam1);
 		intentparam1 = new IntentParameter("get.time", "time");
@@ -102,6 +102,8 @@ public class TextClientApplication {
 		intentresponses.add(intentresponse1);
 		intentresponse1 = new IntentResponse("go.to.confirm", "okay", false);
 		intentresponses.add(intentresponse1);
+		intentresponse1 = new IntentResponse("get.day.and.time", "tomorrow 7:30pm", false);
+		intentresponses.add(intentresponse1);
 
 		for (IntentResponse ir : intentresponses) {
 			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
@@ -127,6 +129,10 @@ public class TextClientApplication {
 		paramresponse1 = new ParameterResponse("username", "My name is Dexter");
 		paramresponses.add(paramresponse1);
 		paramresponse1 = new ParameterResponse("guestNumber", "7");
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("day", "tomorrow 7:30pm");
+		paramresponses.add(paramresponse1);
+		paramresponse1 = new ParameterResponse("time", "tomorrow 7:30pm");
 		paramresponses.add(paramresponse1);
 
 		for (ParameterResponse pr : paramresponses) {
@@ -220,10 +226,12 @@ public class TextClientApplication {
 
 				intentName = responseTest.getResult().getMetadata().getIntentName();
 				line = getTestResponse(intentName, intentresponses, paramresponses, respondedParams);
-				if (intentName.equalsIgnoreCase("Default Fallback Intent")) {
+				if (intentName.equalsIgnoreCase("Default Fallback Intent") || status.equalsIgnoreCase("Fail")) {
 					if (checkRequiredParams(params, respondedParams)) {
 						status = "Pass";
 					}
+					/*else
+						status = "Fail";*/
 						
 					break;
 				}
@@ -264,12 +272,13 @@ public class TextClientApplication {
 					}
 				}
 				}
+				System.out.println(response);
 				ir.setSent(true);
 				break;
 			
 				}
 		}
-		System.out.println(response);
+		
 		return response;
 	}
 
@@ -294,7 +303,7 @@ public class TextClientApplication {
 	 *            not empty.
 	 * 
 	 */
-	private static void showHelp(String errorMessage, int exitCode) {
+/*	private static void showHelp(String errorMessage, int exitCode) {
 		if (errorMessage != null && errorMessage.length() > 0) {
 			System.err.println(errorMessage);
 			System.err.println();
@@ -306,5 +315,5 @@ public class TextClientApplication {
 		System.out.println("        See https://docs.api.ai/docs/key-concepts for details");
 		System.out.println();
 		System.exit(exitCode);
-	}
+	}*/
 }
