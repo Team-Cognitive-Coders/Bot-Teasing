@@ -1,23 +1,19 @@
-/**
- * Copyright 2017 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.api.examples;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseCredentials;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import ai.api.AIConfiguration;
 import ai.api.AIDataService;
@@ -37,12 +33,17 @@ public class TextClientApplication {
 	 */
 	//private static final int ERROR_EXIT_CODE = 1;
 	private static String status = "Review";
+	private static int pass = 0;
+	private static int fail = 0;
+	private static int review = 0;
+	private static int count = 1;
 
-	public static void main(String[] args) {
+	public static void main(String args[]) {
 
 		//BookTable 
+		String devAccessToken = "aa7003e594be4d7f89bd9afbe09b607e";
 		AIConfiguration configurationDevBot = new
-		 AIConfiguration("aa7003e594be4d7f89bd9afbe09b607e");
+		 AIConfiguration(devAccessToken);
 		 
 		// RestaurantChatbot
 		//AIConfiguration configurationDevBot = new AIConfiguration("6e3a284cb2004268adcc63dcddbb8fde");
@@ -50,6 +51,132 @@ public class TextClientApplication {
 		AIDataService dataServiceDev = new AIDataService(configurationDevBot);
 
 		// Add data to the DB
+		ArrayList<Parameter> params = initializeParameter();
+
+		for (Parameter p : params) {
+			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
+		}
+
+
+		ArrayList<IntentResponse> intentresponses = initializeIntentResponse();
+
+		for (IntentResponse ir : intentresponses) {
+			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
+		}
+
+		ArrayList<ParameterResponse> paramresponses = initializParamResponse();
+
+		for (ParameterResponse pr : paramresponses) {
+			System.out.println(pr.getParameterName() + " " + pr.getResponse());
+		}
+
+		// Test Bot Configuration
+		AIDataService dataServiceTest = TestBotConfiguration.getInstance().getDataServiceTest();
+
+		// Test Bot Initializes Conversation
+		AIEvent startConversation = new AIEvent("TESTBOT");
+		String line = null;
+		
+
+		AIRequest requestTest = new AIRequest();
+		requestTest.setEvent(startConversation);
+		AIResponse responseTest;
+
+		System.out.println("------------------------------------------------------------------------------------------------------------------");
+		try {
+			responseTest = dataServiceTest.request(requestTest);
+			String intentName = responseTest.getResult().getMetadata().getIntentName();
+			for (IntentResponse ir : intentresponses) {
+				if (ir.getTestCase() == count && ir.getIntentName().equalsIgnoreCase(intentName) && !ir.getSent()) {
+					System.out.println("Test Case " + count);
+					System.out.print(INPUT_PROMPT);
+					List<String> respondedParams = new ArrayList<>();
+					line = getTestResponse(intentName, intentresponses, paramresponses, respondedParams);
+					testBot(dataServiceDev, dataServiceTest, requestTest, responseTest, line, params, 
+							intentresponses, paramresponses, respondedParams);
+					System.out.println(status);
+					updateCount(status);
+					System.out.println();
+					count++;
+				}
+			}
+			
+			System.out.println(pass + " " + fail + " " + review);
+			String appId = "App1";
+			updateToDB(appId, devAccessToken);
+		} catch (AIServiceException e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("------------------------------------------------------------------------------------------------------------------");
+
+		for (Parameter p : params) {
+			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
+		}
+
+
+		for (IntentResponse ir : intentresponses) {
+			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
+		}
+
+		for (ParameterResponse pr : paramresponses) {
+			System.out.println(pr.getParameterName() + " " + pr.getResponse());
+		}
+
+		System.out.println("See ya!");
+	}
+
+	private static void updateToDB(String appId, String clientAccessToken) {
+		FileInputStream serviceAccount = null;
+		try {
+			serviceAccount = new FileInputStream("firebase/chatdata.json");
+		} catch (FileNotFoundException e1) {
+			
+			e1.printStackTrace();
+		}
+
+		FirebaseOptions options = null;
+		try {
+			options = new FirebaseOptions.Builder()
+			  .setCredential(FirebaseCredentials.fromCertificate(serviceAccount))
+			  .setDatabaseUrl("https://chatdata-47e88.firebaseio.com/")
+			  .build();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		FirebaseApp.initializeApp(options);
+
+		FirebaseAuth defaultAuth = FirebaseAuth.getInstance();
+		
+		System.out.println(defaultAuth);
+		DatabaseReference testRef  = FirebaseDatabase.getInstance()
+													 .getReference("Applications")
+													 .child(appId)
+													 .child("Testing");
+		
+		Map<String, Object> testUpdates = new HashMap<String, Object>();
+		testUpdates.put("Pass", pass);
+		testUpdates.put("Fail", fail);
+		testUpdates.put("Review", review);
+
+		testRef.updateChildren(testUpdates);
+		
+
+	}
+
+	private static void updateCount(String status) {
+		if(status.equalsIgnoreCase("Pass"))
+			pass++;
+		else
+			if(status.equalsIgnoreCase("Fail"))
+				fail++;
+			else
+				review++;
+	}
+	
+
+	public static ArrayList<Parameter> initializeParameter() {
 		Parameter param1 = new Parameter("day", true);
 		ArrayList<Parameter> params = new ArrayList<>();
 		params.add(param1);
@@ -61,54 +188,125 @@ public class TextClientApplication {
 		params.add(param1);
 		param1 = new Parameter("username", false);
 		params.add(param1);
+		return params;
+	}
 
-		for (Parameter p : params) {
-			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
-		}
+	public static ArrayList<IntentResponse> initializeIntentResponse() {
+		IntentResponse intentresponse1 = new IntentResponse(1,"get.day", "today", false);
+        ArrayList<IntentResponse> intentresponses = new ArrayList<>();
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "go.to.reserve.table", "book table", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "get.time", "9pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "get.number.of.guests", "7", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "get.restaurant", "Onesta", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "get.name", "My name is Dexter", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "go.to.confirm", "okay", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(1, "get.day.and.time", "tomorrow 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(2, "go.to.reserve.table", "I want to book a table for five at CCDD on friday 8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(2, "get.name", "Jawad", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(2, "go.to.confirm", "okay", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(2, "get.day.and.time", "tomorrow 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(3, "go.to.reserve.table", "I need a table today", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "get.number.of.guests", "5", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "get.time", "8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "get.restaurant", "Truffles", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "get.name", "Jawad", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "go.to.confirm", "okay", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(3, "get.day.and.time", "tomorrow 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(4, "go.to.reserve.table", "book a table for me", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.number.of.guests", "5", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.time", "8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.restaurant", "Truffles", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.day", "today", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.name", "Saurav", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "go.to.confirm", "yes", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(4, "get.day.and.time", "tonight 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(5, "go.to.reserve.table", "please book a table at CCDD at 5 pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(5, "get.number.of.guests", "5", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(5, "get.day", "today", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(5, "get.name", "Saurav", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(5, "go.to.confirm", "yes", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(5, "get.day.and.time", "tonight 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(6, "go.to.reserve.table", "get me a table at Onesta", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "get.number.of.guests", "5", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "get.time", "8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "get.day", "today", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "get.name", "Raaj", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "go.to.confirm", "yes", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(6, "get.day.and.time", "tonight 7:30pm", false);
+        
+        intentresponse1 = new IntentResponse(7, "go.to.reserve.table", "require a table tonight for 2", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(7, "get.time", "8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(7, "get.restaurant", "Truffles", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(7, "get.name", "Mukya", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(7, "go.to.confirm", "yes", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(7, "get.day.and.time", "tonight 7:30pm", false);
+        intentresponses.add(intentresponse1);
+        
+        intentresponse1 = new IntentResponse(8, "go.to.reserve.table", "get me a table at Onesta", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(8, "get.time", "8pm", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(8, "get.day", "today", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(8, "get.name", "Raaj", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(8, "go.to.confirm", "yes", false);
+        intentresponses.add(intentresponse1);
+        intentresponse1 = new IntentResponse(8, "get.day.and.time", "tonight 7:30pm", false);
 
-		/*IntentParameter intentparam1 = new IntentParameter("get.day", "day");
-		ArrayList<IntentParameter> intentparams = new ArrayList<>();
-		intentparams.add(intentparam1);
-		intentparam1 = new IntentParameter("get.time", "time");
-		intentparams.add(intentparam1);
-		intentparam1 = new IntentParameter("get.number.of.guests", "guestNumber");
-		intentparams.add(intentparam1);
-		intentparam1 = new IntentParameter("get.restaurant", "restaurantName");
-		intentparams.add(intentparam1);
-		intentparam1 = new IntentParameter("get.name", "username");
-		intentparams.add(intentparam1);
+		return intentresponses;
+	}
 
-		for (IntentParameter ip : intentparams) {
-			System.out.println(ip.getIntentName() + " " + ip.getParameterName());
-		}*/
-
-		IntentResponse intentresponse1 = new IntentResponse("get.day", "today", false);
-		ArrayList<IntentResponse> intentresponses = new ArrayList<>();
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("get.time", "9pm", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("get.number.of.guests", "7", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("get.restaurant", "Onesta", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("get.name", "My name is Dexter", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("go.to.reserve.table", "book table", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("go.to.confirm", "okay", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("go.to.reserve.table",
-				"I want to book a table for five at CCDD on friday 8pm", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("go.to.confirm", "okay", false);
-		intentresponses.add(intentresponse1);
-		intentresponse1 = new IntentResponse("get.day.and.time", "tomorrow 7:30pm", false);
-		intentresponses.add(intentresponse1);
-
-		for (IntentResponse ir : intentresponses) {
-			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
-		}
-
+	public static ArrayList<ParameterResponse> initializParamResponse() {
 		ParameterResponse paramresponse1 = new ParameterResponse("day",
 				"I want to book a table for five at CCDD on friday 8pm");
 		ArrayList<ParameterResponse> paramresponses = new ArrayList<>();
@@ -134,63 +332,7 @@ public class TextClientApplication {
 		paramresponses.add(paramresponse1);
 		paramresponse1 = new ParameterResponse("time", "tomorrow 7:30pm");
 		paramresponses.add(paramresponse1);
-
-		for (ParameterResponse pr : paramresponses) {
-			System.out.println(pr.getParameterName() + " " + pr.getResponse());
-		}
-
-		// Test Bot Configuration
-		AIDataService dataServiceTest = TestBotConfiguration.getInstance().getDataServiceTest();
-
-		// Test Bot Initializes Conversation
-		AIEvent startConversation = new AIEvent("TESTBOT");
-		String line = null;
-		int count = 1;
-
-		AIRequest requestTest = new AIRequest();
-		requestTest.setEvent(startConversation);
-		AIResponse responseTest;
-
-		System.out.println("------------------------------------------------------------------------------------------------------------------");
-		try {
-			responseTest = dataServiceTest.request(requestTest);
-			String intentName = responseTest.getResult().getMetadata().getIntentName();
-			for (IntentResponse ir : intentresponses) {
-				if (ir.getIntentName().equalsIgnoreCase(intentName) && !ir.getSent()) {
-					System.out.println("Test Case " + count);
-					System.out.print(INPUT_PROMPT);
-					List<String> respondedParams = new ArrayList<>();
-					line = getTestResponse(intentName, intentresponses, paramresponses, respondedParams);
-					testBot(dataServiceDev, dataServiceTest, requestTest, responseTest, line, params, 
-							intentresponses, paramresponses, respondedParams);
-					System.out.println(status);
-					System.out.println();
-					count++;
-				}
-			}
-		} catch (AIServiceException e) {
-			e.printStackTrace();
-		}
-
-		System.out.println("------------------------------------------------------------------------------------------------------------------");
-
-		for (Parameter p : params) {
-			System.out.println(p.getParameterName() + " " + p.getRequiredFlag());
-		}
-
-		/*for (IntentParameter ip : intentparams) {
-			System.out.println(ip.getIntentName() + " " + ip.getParameterName());
-		}*/
-
-		for (IntentResponse ir : intentresponses) {
-			System.out.println(ir.getIntentName() + " " + ir.getResponse() + " " + ir.getSent());
-		}
-
-		for (ParameterResponse pr : paramresponses) {
-			System.out.println(pr.getParameterName() + " " + pr.getResponse());
-		}
-
-		System.out.println("See ya!");
+		return paramresponses;
 	}
 
 	public static String getResponse(AIResponse response) {
@@ -259,7 +401,7 @@ public class TextClientApplication {
 			ArrayList<ParameterResponse> paramresponses, List<String> respondedParams) {
 		String response = "";
 		for (IntentResponse ir : intentresponses) {
-			if (ir.getIntentName().equalsIgnoreCase(intentName) && !ir.getSent()) {
+			if (ir.getTestCase() == count && ir.getIntentName().equalsIgnoreCase(intentName) && !ir.getSent()) {
 				response = ir.getResponse();
 				List<String> tempParamList = getParameterForResponse(paramresponses, response);
 				if(tempParamList != null) {
@@ -308,7 +450,6 @@ public class TextClientApplication {
 			System.err.println(errorMessage);
 			System.err.println();
 		}
-
 		System.out.println("Usage: APIKEY");
 		System.out.println();
 		System.out.println("APIKEY  Your unique application key");

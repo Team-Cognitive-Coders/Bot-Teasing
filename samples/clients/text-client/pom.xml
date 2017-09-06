@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-    <artifactId>text-client</artifactId>
+	<artifactId>text-client</artifactId>
 	<name>Api.Ai Console Text Client</name>
 	<description>Tutorial Api.ai client </description>
 	<parent>
@@ -9,6 +9,8 @@
 		<artifactId>libai-samples</artifactId>
 		<version>1.6.12</version>
 	</parent>
+
+	
 	<url>https://github.com/api-ai/apiai-java-sdk/tree/master/examples/text-client</url>
 	<build>
 		<pluginManagement>
@@ -37,4 +39,17 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	<dependencies>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>5.3.0</version>
+		</dependency>
+	</dependencies>
 </project>

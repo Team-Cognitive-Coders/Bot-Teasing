@@ -2,16 +2,26 @@ package ai.api.examples;
 
 public class IntentResponse {
 
+	private int testCase;
 	private String intentName;
 	private String response;
 	private boolean sent;
 	
-	IntentResponse(String intentName, String response, boolean sent){
+	IntentResponse(int testCase, String intentName, String response, boolean sent){
+		this.testCase = testCase;
 		this.intentName = intentName;
 		this.response = response;
 		this.sent = sent;
 	}
 	
+	public int getTestCase() {
+		return testCase;
+	}
+
+	public void setTestCase(int testCase) {
+		this.testCase = testCase;
+	}
+
 	public String getIntentName() {
 		return intentName;
 	}
